@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Stats Summary -->
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ overall_attendance }}%</h3>
+                <p>Overall Attendance</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_classes }}</h3>
+                <p>Total Classes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ enrolled_courses }}</h3>
+                <p>Enrolled Courses</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Charts -->
+    <div class="row">
+        <!-- Course-wise Attendance -->
+        <div class="col-md-6 mb-4 mx-auto">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2>Course-wise Attendance</h2>
+                </div>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="courseAttendanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrolled Courses -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Your Courses</h4>
+        </div>
+        <div class="card-body">
+            {% if enrollments %}
+                <div class="row">
+                    {% for enrollment in enrollments %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card course-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ enrollment.course.name }}</h5>
+                                <p class="card-text">Department: {{ enrollment.course.department }}</p>
+                                <div class="course-stats mb-3">
+                                    <div class="attendance-circle" data-percentage="{{ enrollment.attendance_percentage }}">
+                                        <span class="percentage">{{ enrollment.attendance_percentage }}%</span>
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('attendance.mark_attendance', course_id=enrollment.course.id) }}" 
+                                   class="btn btn-primary">Mark Attendance</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>You are not enrolled in any courses yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Available Courses -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Available Courses</h4>
+        </div>
+        <div class="card-body">
+            {% if available_courses %}
+                <div class="row">
+                    {% for course in available_courses %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card course-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ course.name }}</h5>
+                                <p class="card-text">Department: {{ course.department }}</p>
+                                <form action="{{ url_for('main.enroll_course', course_id=course.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-success">Enroll</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No available courses to enroll in.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Course Attendance Chart
+const courseCtx = document.getElementById('courseAttendanceChart').getContext('2d');
+const courseData = {
+    labels: {{ course_names|tojson }},
+    datasets: [{
+        data: {{ course_attendance|tojson }},
+        backgroundColor: [
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(249, 115, 22, 0.8)',
+            'rgba(236, 72, 153, 0.8)'
+        ],
+        borderWidth: 0
+    }]
+};
+
+new Chart(courseCtx, {
+    type: 'pie',
+    data: courseData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    boxWidth: 12,
+                    padding: 15,
+                    font: {
+                        size: 12
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Initialize attendance circles
+document.querySelectorAll('.attendance-circle').forEach(circle => {
+    const percentage = circle.dataset.percentage;
+    const circumference = 2 * Math.PI * 38; // radius is 38
+    const offset = circumference - (percentage / 100 * circumference);
+    
+    circle.style.setProperty('--percentage', offset);
+    circle.style.setProperty('--progress-color', `hsl(${percentage}, 70%, 50%)`);
+});
+
+// Add animation classes
+document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}
