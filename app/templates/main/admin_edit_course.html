@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Course{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Edit Course</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Course Name</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ course.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="department" class="form-label">Department</label>
+                            <input type="text" class="form-control" id="department" name="department" value="{{ course.department }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="classroom" class="form-label">Classroom</label>
+                            <input type="text" class="form-control" id="classroom" name="classroom" value="{{ course.classroom }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="teacher_id" class="form-label">Assigned Teacher</label>
+                            <select class="form-select" id="teacher_id" name="teacher_id" required>
+                                {% for teacher in teachers %}
+                                <option value="{{ teacher.id }}" {% if teacher.id == course.teacher_id %}selected{% endif %}>
+                                    {{ teacher.username }} ({{ teacher.department }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Update Course</button>
+                            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

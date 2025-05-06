@@ -1,0 +1,197 @@
+{% extends "auth/auth_base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="auth-form">
+    <div class="card">
+        <div class="card-body">
+            <div class="text-center mb-4">
+                <div class="logo-container mb-4">
+                    <picture class="logo-img">
+                        <source srcset="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Smart Attendance Logo" width="80" height="80">
+                    </picture>
+                    <h2 class="logo-text">Smart Attendance</h2>
+                </div>
+                <p class="text-muted">Create your account</p>
+            </div>
+            
+            <form method="POST" class="register-form">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="username" 
+                               name="username" 
+                               placeholder="Username"
+                               required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        <input type="email" 
+                               class="form-control" 
+                               id="email" 
+                               name="email" 
+                               placeholder="Email"
+                               required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" 
+                               class="form-control" 
+                               id="password" 
+                               name="password" 
+                               placeholder="Password"
+                               required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-building"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="department" 
+                               name="department" 
+                               placeholder="Department"
+                               required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user-tag"></i>
+                        </span>
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="" disabled selected>Select Role</option>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 btn-lg mb-4">
+                    <i class="fas fa-user-plus me-2"></i>Register
+                </button>
+                
+                <div class="text-center">
+                    <p class="mb-0">
+                        Already have an account? 
+                        <a href="{{ url_for('auth.login') }}" class="text-primary">Login here</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-form {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+    background: var(--bg-gradient);
+}
+
+.auth-form .card {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+}
+
+.logo-text {
+    font-size: 1.75rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+}
+
+.input-group {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.input-group-text {
+    background: var(--surface-color);
+    border-color: var(--border-color);
+    color: var(--primary-color);
+    min-width: 42px;
+    justify-content: center;
+}
+
+.form-control, select.form-control {
+    border-left: none;
+    background-color: var(--surface-color);
+}
+
+.form-control:focus {
+    border-color: var(--border-color);
+    box-shadow: none;
+    border-left: none;
+}
+
+.input-group:focus-within {
+    box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+select.form-control {
+    padding-left: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Add floating label behavior
+    const inputs = document.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            input.parentElement.classList.add('focused');
+        });
+        input.addEventListener('blur', () => {
+            if (!input.value) {
+                input.parentElement.classList.remove('focused');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

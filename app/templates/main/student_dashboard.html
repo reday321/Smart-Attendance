@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Stats Summary -->
+    <div class="dashboard-stats">
+        <!-- Face Registration Status -->
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-id-card"></i>
+            </div>
+            <div class="stat-info">
+                {% if current_user.face_encoding %}
+                <h3 class="text-success"><i class="fas fa-check-circle"></i> Registered</h3>
+                <p>Face Recognition</p>
+                {% else %}
+                <h3 class="text-danger"><i class="fas fa-times-circle"></i> Not Registered</h3>
+                <p>Face Recognition</p>
+                <a href="{{ url_for('attendance.register_face') }}" class="btn btn-primary btn-sm mt-2">
+                    <i class="fas fa-camera me-1"></i>Register Now
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ overall_attendance }}%</h3>
+                <p>Overall Attendance</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_classes }}</h3>
+                <p>Total Classes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ enrolled_courses }}</h3>
+                <p>Enrolled Courses</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Charts -->
+    <div class="row">
+        <!-- Course-wise Attendance -->
+        <div class="col-md-6 mb-4 mx-auto">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2>Course-wise Attendance</h2>
+                </div>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="courseAttendanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    {% if notifications %}
+    <div class="card mb-4 notifications-container">
+        <div class="card-header">
+            <h4><i class="fas fa-bell me-2"></i>Notifications</h4>
+        </div>
+        <div class="card-body">
+            {% for notification in notifications %}
+            <div class="alert alert-{{ 'info' if notification.type == 'pending' else 'danger' }} alert-dismissible fade show notification-item" 
+                 role="alert" 
+                 data-notification-id="{{ notification.id }}">
+                <i class="fas fa-{{ 'clock' if notification.type == 'pending' else 'times-circle' }} me-2"></i>
+                {{ notification.message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Enrolled Courses -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Your Courses</h4>
+        </div>
+        <div class="card-body">
+            {% if enrollments|selectattr('status', 'equalto', 'approved')|list %}
+                <div class="row">
+                    {% for enrollment in enrollments %}
+                    {% if enrollment.status == 'approved' %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card course-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ enrollment.course.name }}</h5>
+                                <p class="card-text">Department: {{ enrollment.course.department }}</p>
+                                <div class="course-stats mb-3">
+                                    <div class="attendance-circle" data-percentage="{{ enrollment.attendance_percentage }}">
+                                        <span class="percentage">{{ enrollment.attendance_percentage }}%</span>
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('attendance.mark_attendance', course_id=enrollment.course.id) }}" 
+                                   class="btn btn-primary">Mark Attendance</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>You are not enrolled in any courses yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Available Courses -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Available Courses</h4>
+        </div>
+        <div class="card-body">
+            {% if available_courses %}
+                <div class="row">
+                    {% for course in available_courses %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card course-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ course.name }}</h5>
+                                <div class="course-details mb-3">
+                                    <p class="card-text mb-1">
+                                        <i class="fas fa-building me-2"></i>Department: {{ course.department }}
+                                    </p>
+                                    <p class="card-text mb-1">
+                                        <i class="fas fa-chalkboard-teacher me-2"></i>Teacher: {{ course.teacher.username }}
+                                    </p>
+                                    <p class="card-text mb-1">
+                                        <i class="fas fa-door-open me-2"></i>Classroom: {{ course.classroom }}
+                                    </p>
+                                    <p class="card-text">
+                                        <i class="fas fa-calendar-alt me-2"></i>Schedule: 
+                                        {% if course.week_schedule %}
+                                            {{ course.week_schedule.split(',')|join(', ') }}
+                                        {% else %}
+                                            Not set
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <form action="{{ url_for('main.enroll_course', course_id=course.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="fas fa-user-plus me-2"></i>Enroll
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No available courses to enroll in.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Course Attendance Chart
+const courseCtx = document.getElementById('courseAttendanceChart').getContext('2d');
+const courseData = {
+    labels: {{ course_names|tojson }},
+    datasets: [{
+        data: {{ course_attendance|tojson }},
+        backgroundColor: [
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(249, 115, 22, 0.8)',
+            'rgba(236, 72, 153, 0.8)'
+        ],
+        borderWidth: 0
+    }]
+};
+
+new Chart(courseCtx, {
+    type: 'pie',
+    data: courseData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    boxWidth: 12,
+                    padding: 15,
+                    font: {
+                        size: 12
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Initialize attendance circles
+document.querySelectorAll('.attendance-circle').forEach(circle => {
+    const percentage = circle.dataset.percentage;
+    const circumference = 2 * Math.PI * 38; // radius is 38
+    const offset = circumference - (percentage / 100 * circumference);
+    
+    circle.style.setProperty('--percentage', offset);
+    circle.style.setProperty('--progress-color', `hsl(${percentage}, 70%, 50%)`);
+});
+
+// Handle notification dismissal
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Bootstrap alerts
+    const alerts = document.querySelectorAll('.alert-dismissible');
+    alerts.forEach(alert => {
+        const closeBtn = alert.querySelector('.btn-close');
+        closeBtn.addEventListener('click', async (e) => {
+            const notificationId = alert.dataset.notificationId;
+            try {
+                const response = await fetch(`/notification/${notificationId}/dismiss`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to dismiss notification');
+                }
+                
+                // Remove the notification element
+                alert.remove();
+                
+                // If no more notifications, remove the entire notifications card
+                const notificationsContainer = document.querySelector('.notifications-container');
+                if (notificationsContainer && !notificationsContainer.querySelector('.alert')) {
+                    notificationsContainer.remove();
+                }
+            } catch (error) {
+                console.error('Error dismissing notification:', error);
+            }
+        });
+    });
+
+    // Add animation classes
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

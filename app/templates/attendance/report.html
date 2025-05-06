@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Report - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Attendance Report - {{ course.name }}</h2>
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Student ID</th>
+                            <th>Total Present</th>
+                            <th>Total Absent</th>
+                            <th>Attendance Rate</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in attendance_data %}
+                        <tr>
+                            <td>{{ item.student.username }}</td>
+                            <td>{{ item.student.id }}</td>
+                            <td>
+                                {{ item.records|selectattr('status', 'equalto', 'present')|list|length }}
+                            </td>
+                            <td>
+                                {{ item.records|selectattr('status', 'equalto', 'absent')|list|length }}
+                            </td>
+                            <td>
+                                {% set total = item.records|length %}
+                                {% set present = item.records|selectattr('status', 'equalto', 'present')|list|length %}
+                                {% if total > 0 %}
+                                    {{ "%.2f"|format(present / total * 100) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-info" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#details-{{ item.student.id }}">
+                                    Show Details
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="6" class="p-0">
+                                <div class="collapse" id="details-{{ item.student.id }}">
+                                    <div class="p-3">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date (Bangladesh Time)</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for record in item.records %}
+                                                <tr>
+                                                    <td>{{ record.local_time.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ 'success' if record.status == 'present' else 'danger' }}">
+                                                            {{ record.status }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2>Welcome, {{ current_user.username }}</h2>
+    
+    <div class="mb-4">
+        <a href="{{ url_for('main.create_course') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-2"></i>Create New Course
+        </a>
+    </div>
+
+    <!-- Courses -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Your Courses</h4>
+        </div>
+        <div class="card-body">
+            {% if courses %}
+                <div class="row">
+                    {% for course in courses %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card course-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ course.name }}</h5>
+                                <div class="course-details mb-3">
+                                    <p class="card-text mb-1">
+                                        <i class="fas fa-building me-2"></i>Department: {{ course.department }}
+                                    </p>
+                                    <p class="card-text mb-1">
+                                        <i class="fas fa-door-open me-2"></i>Classroom: {{ course.classroom }}
+                                    </p>
+                                    <p class="card-text">
+                                        <i class="fas fa-calendar-alt me-2"></i>Schedule: 
+                                        {% if course.week_schedule %}
+                                            {{ course.week_schedule.split(',')|join(', ') }}
+                                        {% else %}
+                                            Not set
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <a href="{{ url_for('attendance.attendance_report', course_id=course.id) }}" 
+                                   class="btn btn-info mb-2 w-100">
+                                   <i class="fas fa-chart-bar me-2"></i>View Attendance
+                                </a>
+                                
+                                <!-- Pending Enrollments -->
+                                {% set pending_enrollments = course.students|selectattr('status', 'equalto', 'pending')|list %}
+                                {% if pending_enrollments %}
+                                    <div class="mt-3">
+                                        <h6 class="mb-2">
+                                            <i class="fas fa-clock me-2"></i>Pending Enrollments
+                                        </h6>
+                                        <ul class="list-group">
+                                            {% for enrollment in pending_enrollments %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                {{ enrollment.student.username }}
+                                                <div>
+                                                    <a href="{{ url_for('main.manage_enrollment', enrollment_id=enrollment.id, action='approve') }}"
+                                                       class="btn btn-success btn-sm">
+                                                       <i class="fas fa-check"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('main.manage_enrollment', enrollment_id=enrollment.id, action='reject') }}"
+                                                       class="btn btn-danger btn-sm">
+                                                       <i class="fas fa-times"></i>
+                                                    </a>
+                                                </div>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Enrolled Students -->
+                                {% set approved_enrollments = course.students|selectattr('status', 'equalto', 'approved')|list %}
+                                {% if approved_enrollments %}
+                                    <div class="mt-3">
+                                        <h6 class="mb-2">
+                                            <i class="fas fa-user-graduate me-2"></i>Enrolled Students ({{ approved_enrollments|length }})
+                                        </h6>
+                                        <ul class="list-group">
+                                            {% for enrollment in approved_enrollments %}
+                                            <li class="list-group-item">
+                                                {{ enrollment.student.username }}
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">You haven't created any courses yet.</p>
+                    <a href="{{ url_for('main.create_course') }}" class="btn btn-primary">
+                        Create Your First Course
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add animations
+document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('.course-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Mark Attendance{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Mark Attendance</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="camera-container">
+                            <video id="video" width="100%" autoplay></video>
+                            <div class="camera-overlay" style="display: none;">
+                                <div class="spinner-border text-light" role="status">
+                                    <span class="visually-hidden">Processing...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="capture" class="btn btn-primary mt-3">
+                            <i class="fas fa-camera me-2"></i>Capture Photo
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="canvas" style="display: none;"></canvas>
+                        <img id="photo" class="img-fluid rounded" style="display: none;">
+                        <button id="submit" class="btn btn-success mt-3" style="display: none;">
+                            <i class="fas fa-check me-2"></i>Submit Attendance
+                            <span class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;"></span>
+                        </button>
+                        <button id="retake" class="btn btn-secondary mt-3 ms-2" style="display: none;">
+                            <i class="fas fa-redo me-2"></i>Retake Photo
+                        </button>
+                    </div>
+                </div>
+                <div id="message" class="alert mt-3" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.camera-container {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+}
+
+.camera-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#video, #photo {
+    width: 100%;
+    border-radius: 12px;
+}
+</style>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const photo = document.getElementById('photo');
+    const captureButton = document.getElementById('capture');
+    const submitButton = document.getElementById('submit');
+    const retakeButton = document.getElementById('retake');
+    const messageDiv = document.getElementById('message');
+    const overlay = document.querySelector('.camera-overlay');
+    const courseId = {{ course_id|tojson|safe }};
+    let isSubmitting = false;
+
+    // Get camera access
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.error('Error accessing camera:', err);
+            showMessage('Error accessing camera. Please make sure your camera is connected and you have granted permission.', 'danger');
+        });
+
+    // Capture photo
+    captureButton.addEventListener('click', () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        photo.src = canvas.toDataURL('image/jpeg');
+        video.style.display = 'none';
+        photo.style.display = 'block';
+        captureButton.style.display = 'none';
+        submitButton.style.display = 'inline-block';
+        retakeButton.style.display = 'inline-block';
+    });
+
+    // Retake photo
+    retakeButton.addEventListener('click', () => {
+        video.style.display = 'block';
+        photo.style.display = 'none';
+        captureButton.style.display = 'inline-block';
+        submitButton.style.display = 'none';
+        retakeButton.style.display = 'none';
+    });
+
+    // Submit photo for attendance
+    submitButton.addEventListener('click', async () => {
+        if (isSubmitting) return;
+        isSubmitting = true;
+
+        const spinnerElement = submitButton.querySelector('.spinner-border');
+        spinnerElement.style.display = 'inline-block';
+        submitButton.disabled = true;
+        retakeButton.disabled = true;
+
+        // Stop the video stream when submitting
+        const stream = video.srcObject;
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+
+        try {
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+            const formData = new FormData();
+            formData.append('image', blob, 'face.jpg');
+
+            const response = await fetch(`/attendance/mark/${courseId}`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.error) {
+                showMessage(`${data.error} (Confidence: ${data.confidence})`, 'danger');
+                // Re-enable buttons on error
+                submitButton.disabled = false;
+                retakeButton.disabled = false;
+                isSubmitting = false;
+            } else {
+                showMessage(`${data.message} (Confidence: ${data.confidence})`, 'success');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            }
+        } catch (err) {
+            console.error('Error:', err);
+            showMessage('An error occurred while marking attendance.', 'danger');
+            // Re-enable buttons on error
+            submitButton.disabled = false;
+            retakeButton.disabled = false;
+            isSubmitting = false;
+        } finally {
+            spinnerElement.style.display = 'none';
+        }
+    });
+
+    function showMessage(message, type) {
+        messageDiv.textContent = message;
+        messageDiv.className = `alert alert-${type} mt-3`;
+        messageDiv.style.display = 'block';
+    }
+
+    // Clean up video stream when leaving the page
+    window.addEventListener('beforeunload', () => {
+        const stream = video.srcObject;
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}
